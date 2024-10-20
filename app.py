@@ -1,10 +1,10 @@
+import os
 from random import randint
 from flask import Flask
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.resource import ResourceAttributes
 
@@ -13,17 +13,20 @@ resource = Resource(attributes={
     ResourceAttributes.SERVICE_NAME: "dice-server"
 })
 
-# Configure the tracer provider with a resource (service name)
-trace.set_tracer_provider(TracerProvider(resource=resource))
+
+
+# Retrieve Jaeger configuration from environment variables
+JAEGER_HOST = os.getenv("JAEGER_AGENT_HOST", "localhost")  # Default to "localhost" if not set
+JAEGER_PORT = int(os.getenv("JAEGER_AGENT_PORT", 6831))  # Default to port 6831 if not set
 
 # Set up Jaeger exporter
 jaeger_exporter = JaegerExporter(
-    agent_host_name="jaeger",  # Jaeger service in docker-compose
-    agent_port=6831,  # Jaeger agent UDP port
+    agent_host_name=JAEGER_HOST,
+    agent_port=JAEGER_PORT,
 )
 
-# Configure the tracer provider
-trace.set_tracer_provider(TracerProvider())
+# Configure the tracer provider with a resource (service name)
+trace.set_tracer_provider(TracerProvider(resource=resource))
 tracer = trace.get_tracer_provider().get_tracer("diceroller.tracer")
 span_processor = BatchSpanProcessor(jaeger_exporter)
 trace.get_tracer_provider().add_span_processor(span_processor)
