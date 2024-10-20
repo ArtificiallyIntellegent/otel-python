@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  python-app:
+    image: python:3.9-slim
+    container_name: python-dice-app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/usr/src/app
+    working_dir: /usr/src/app
+    environment:
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_TRACES_EXPORTER=jaeger
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
+    command: >
+      sh -c "pip install flask opentelemetry-sdk opentelemetry-instrumentation-flask opentelemetry-exporter-jaeger && 
+             python app.py"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.41
+    container_name: jaeger
+    ports:
+      - "6831:6831/udp" # Jaeger UDP port for agent
+      - "16686:16686"   # Jaeger's web UI port
